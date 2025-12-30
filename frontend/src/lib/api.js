@@ -69,5 +69,14 @@ export const api = {
     const url = ambulanceType ? `${API}/driver/available?ambulance_type=${ambulanceType}` : `${API}/driver/available`;
     const response = await axios.get(url, { headers: getAuthHeader() });
     return response.data;
+  },
+  
+  getNearbyAmbulances: async (latitude, longitude, radiusKm = 50) => {
+    const response = await axios.post(`${API}/driver/nearby`, {
+      latitude,
+      longitude,
+      radius_km: radiusKm
+    }, { headers: getAuthHeader() });
+    return response.data;
   }
 };
