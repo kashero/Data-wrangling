@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -33,9 +33,38 @@ const createIcon = (color, emoji) => L.divIcon({
   popupAnchor: [0, -36],
 });
 
-const patientIcon = createIcon('#DC2626', '🏥');
+const patientIcon = createIcon('#DC2626', '📍');
 const driverIcon = createIcon('#0EA5E9', '🚑');
-const destinationIcon = createIcon('#059669', '📍');
+const destinationIcon = createIcon('#059669', '🏥');
+
+// Smaller icon for nearby ambulances
+const createNearbyAmbulanceIcon = (type) => {
+  const colors = {
+    basic: '#22C55E',
+    icu: '#3B82F6', 
+    neonatal: '#A855F7'
+  };
+  const color = colors[type] || '#0EA5E9';
+  
+  return L.divIcon({
+    className: 'nearby-ambulance-marker',
+    html: `<div style="
+      background: ${color};
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      font-size: 14px;
+    ">🚑</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
+};
 
 // Component to handle map center changes
 function MapUpdater({ center }) {
@@ -55,9 +84,10 @@ export default function MapComponent({
   patientLocation, 
   driverLocation, 
   destination,
+  nearbyAmbulances = [],
   zoom = 14 
 }) {
-  const defaultCenter = center || patientLocation || { lat: 40.7128, lng: -74.0060 };
+  const defaultCenter = center || patientLocation || { lat: -1.2921, lng: 36.8219 }; // Default to Nairobi
   
   return (
     <MapContainer
@@ -73,32 +103,35 @@ export default function MapComponent({
       
       <MapUpdater center={center} />
       
+      {/* Patient/Pickup Location */}
       {patientLocation && (
         <Marker 
           position={[patientLocation.lat, patientLocation.lng]} 
           icon={patientIcon}
         >
           <Popup>
-            <strong>Pickup Location</strong>
+            <strong>Your Location</strong>
             <br />
-            {patientLocation.address || 'Patient location'}
+            {patientLocation.address || 'Pickup point'}
           </Popup>
         </Marker>
       )}
       
+      {/* Active Driver Location */}
       {driverLocation && (
         <Marker 
           position={[driverLocation.lat, driverLocation.lng]} 
           icon={driverIcon}
         >
           <Popup>
-            <strong>Ambulance</strong>
+            <strong>Your Ambulance</strong>
             <br />
-            Driver location
+            En route to you
           </Popup>
         </Marker>
       )}
       
+      {/* Destination */}
       {destination && (
         <Marker 
           position={[destination.lat, destination.lng]} 
@@ -111,6 +144,35 @@ export default function MapComponent({
           </Popup>
         </Marker>
       )}
+      
+      {/* Nearby Ambulances */}
+      {nearbyAmbulances && nearbyAmbulances.map((ambulance) => (
+        ambulance.location && (
+          <Marker
+            key={ambulance.id}
+            position={[ambulance.location.lat, ambulance.location.lng]}
+            icon={createNearbyAmbulanceIcon(ambulance.ambulance_type)}
+          >
+            <Popup>
+              <div className="text-sm">
+                <strong>{ambulance.ambulance_type?.toUpperCase() || 'Ambulance'}</strong>
+                <br />
+                <span className="text-slate-600">
+                  {ambulance.vehicle_number || 'Available'}
+                </span>
+                <br />
+                <span className="text-green-600 font-medium">
+                  ~{ambulance.eta_minutes} min away
+                </span>
+                <br />
+                <span className="text-slate-500 text-xs">
+                  {ambulance.distance_km} km
+                </span>
+              </div>
+            </Popup>
+          </Marker>
+        )
+      ))}
     </MapContainer>
   );
 }
