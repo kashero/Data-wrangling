@@ -193,7 +193,7 @@ export default function RegisterPage({ isDriver = false }) {
               
               <Button 
                 type="submit" 
-                className="w-full bg-red-600 hover:bg-red-700"
+                className="w-full bg-red-600 hover:bg-red-700 relative z-0"
                 disabled={loading}
                 data-testid="register-submit-btn"
               >
