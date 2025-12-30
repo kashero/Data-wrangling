@@ -388,6 +388,139 @@ class SwiftCareAPITester:
             description="Rate completed booking"
         )
 
+    def test_nearby_ambulances(self):
+        """Test nearby ambulances API with ETA and distance"""
+        print("\n=== NEARBY AMBULANCES TESTS ===")
+        
+        if not self.patient_token:
+            print("❌ Skipping nearby ambulances tests - no patient token")
+            return
+        
+        # Test nearby ambulances endpoint
+        nearby_data = {
+            "latitude": -1.2921,  # Nairobi coordinates
+            "longitude": 36.8219,
+            "radius_km": 50
+        }
+        
+        success, response = self.run_test(
+            "Get Nearby Ambulances", 
+            "POST", 
+            "driver/nearby", 
+            200, 
+            data=nearby_data,
+            token=self.patient_token,
+            description="Get nearby ambulances with ETA and distance"
+        )
+        
+        if success:
+            # Verify response structure
+            if 'ambulances' in response:
+                print(f"   Found {len(response['ambulances'])} nearby ambulances")
+                
+                # Check if any ambulances have required fields
+                for amb in response['ambulances'][:3]:  # Check first 3
+                    if 'distance_km' in amb and 'eta_minutes' in amb:
+                        print(f"   ✅ Ambulance has distance_km: {amb['distance_km']}, eta_minutes: {amb['eta_minutes']}")
+                    else:
+                        print(f"   ❌ Ambulance missing distance_km or eta_minutes fields")
+                        
+            if 'eta_by_type' in response:
+                print(f"   ETA by type data available: {list(response['eta_by_type'].keys())}")
+                
+                # Check KES pricing structure
+                for amb_type, eta_info in response['eta_by_type'].items():
+                    if 'count' in eta_info and 'min_eta_minutes' in eta_info:
+                        print(f"   ✅ {amb_type}: {eta_info['count']} available, min ETA: {eta_info['min_eta_minutes']} min")
+            
+            print(f"   Total nearby ambulances: {response.get('total_nearby', 0)}")
+
+    def test_pricing_structure(self):
+        """Test KES pricing structure in bookings"""
+        print("\n=== KES PRICING TESTS ===")
+        
+        if not self.patient_token:
+            print("❌ Skipping pricing tests - no patient token")
+            return
+        
+        # Create booking to check pricing
+        booking_data = {
+            "pickup_location": {
+                "lat": -1.2921,
+                "lng": 36.8219,
+                "address": "Nairobi Test Location"
+            },
+            "ambulance_type": "basic",
+            "notes": "Test booking for KES pricing verification",
+            "is_emergency": False
+        }
+        
+        success, response = self.run_test(
+            "Create Booking for KES Pricing", 
+            "POST", 
+            "bookings", 
+            200, 
+            data=booking_data,
+            token=self.patient_token,
+            description="Create booking to verify KES pricing"
+        )
+        
+        if success and 'estimated_fare' in response:
+            fare = response['estimated_fare']
+            print(f"   Basic ambulance estimated fare: KES {fare}")
+            
+            # Verify KES pricing ranges
+            if fare >= 2000:  # Basic should be at least KES 2000
+                print(f"   ✅ Basic fare {fare} meets minimum KES 2000")
+            else:
+                print(f"   ❌ Basic fare {fare} below expected KES 2000 minimum")
+        
+        # Test ICU pricing
+        icu_booking_data = booking_data.copy()
+        icu_booking_data["ambulance_type"] = "icu"
+        
+        success, response = self.run_test(
+            "Create ICU Booking for Pricing", 
+            "POST", 
+            "bookings", 
+            200, 
+            data=icu_booking_data,
+            token=self.patient_token,
+            description="Create ICU booking to verify KES pricing"
+        )
+        
+        if success and 'estimated_fare' in response:
+            icu_fare = response['estimated_fare']
+            print(f"   ICU ambulance estimated fare: KES {icu_fare}")
+            
+            if icu_fare >= 5000:  # ICU should be at least KES 5000
+                print(f"   ✅ ICU fare {icu_fare} meets minimum KES 5000")
+            else:
+                print(f"   ❌ ICU fare {icu_fare} below expected KES 5000 minimum")
+        
+        # Test Neonatal pricing
+        neonatal_booking_data = booking_data.copy()
+        neonatal_booking_data["ambulance_type"] = "neonatal"
+        
+        success, response = self.run_test(
+            "Create Neonatal Booking for Pricing", 
+            "POST", 
+            "bookings", 
+            200, 
+            data=neonatal_booking_data,
+            token=self.patient_token,
+            description="Create neonatal booking to verify KES pricing"
+        )
+        
+        if success and 'estimated_fare' in response:
+            neonatal_fare = response['estimated_fare']
+            print(f"   Neonatal ambulance estimated fare: KES {neonatal_fare}")
+            
+            if neonatal_fare >= 8000:  # Neonatal should be at least KES 8000
+                print(f"   ✅ Neonatal fare {neonatal_fare} meets minimum KES 8000")
+            else:
+                print(f"   ❌ Neonatal fare {neonatal_fare} below expected KES 8000 minimum")
+
     def test_sos_emergency(self):
         """Test SOS emergency booking"""
         print("\n=== SOS EMERGENCY TESTS ===")
@@ -398,11 +531,11 @@ class SwiftCareAPITester:
         
         # Create SOS booking
         sos_data = {
-            "latitude": 40.7128,
-            "longitude": -74.0060
+            "latitude": -1.2921,  # Nairobi coordinates
+            "longitude": 36.8219
         }
         
-        self.run_test(
+        success, response = self.run_test(
             "Create SOS Booking", 
             "POST", 
             "bookings/sos", 
@@ -411,6 +544,16 @@ class SwiftCareAPITester:
             token=self.patient_token,
             description="Create emergency SOS booking"
         )
+        
+        if success and 'estimated_fare' in response:
+            sos_fare = response['estimated_fare']
+            print(f"   SOS emergency fare: KES {sos_fare}")
+            
+            # SOS should default to ICU pricing
+            if sos_fare >= 5000:
+                print(f"   ✅ SOS fare {sos_fare} uses ICU pricing (KES 5000+)")
+            else:
+                print(f"   ❌ SOS fare {sos_fare} below expected ICU pricing")
 
     def test_error_cases(self):
         """Test error handling"""
