@@ -108,3 +108,23 @@ Build a website that functions like Uber but for ordering ambulances. Patients c
 3. Build admin dashboard for fleet management
 4. Add route visualization on map
 5. Integrate SMS notifications
+
+---
+
+## Update: December 30, 2024
+
+### New Features Added
+1. **Nearby Ambulances Map** - Patients can see available ambulances on the map before booking
+2. **ETA Estimation** - Shows estimated arrival time based on distance (Haversine formula)
+3. **Currency Changed to KES** (Kenyan Shillings):
+   - Basic: KES 2,000 base + KES 150/km
+   - ICU: KES 5,000 base + KES 300/km  
+   - Neonatal: KES 8,000 base + KES 400/km
+
+### New API Endpoint
+- POST /api/driver/nearby - Returns nearby ambulances with distance_km and eta_minutes
+
+### Technical Details
+- Haversine formula for distance calculation
+- Average ambulance speed: 40 km/h for ETA
+- Map markers color-coded by ambulance type (green=basic, blue=ICU, purple=neonatal)
