@@ -18,6 +18,11 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled'
 };
 
+// Format KES currency
+const formatKES = (amount) => {
+  return `KES ${amount?.toLocaleString() || 0}`;
+};
+
 export default function BookingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
