@@ -308,6 +308,76 @@ async def get_available_drivers(ambulance_type: Optional[AmbulanceType] = None):
     drivers = await db.users.find(query, {"_id": 0, "password": 0}).to_list(100)
     return drivers
 
+class NearbyRequest(BaseModel):
+    latitude: float
+    longitude: float
+    radius_km: float = 50  # Default 50km radius
+
+@api_router.post("/driver/nearby")
+async def get_nearby_ambulances(location: NearbyRequest, user: dict = Depends(get_current_user)):
+    """Get nearby available ambulances with ETA"""
+    # Get all available drivers with location
+    query = {
+        "role": UserRole.DRIVER, 
+        "is_available": True,
+        "current_location": {"$ne": None}
+    }
+    
+    drivers = await db.users.find(query, {"_id": 0, "password": 0}).to_list(100)
+    
+    nearby_ambulances = []
+    for driver in drivers:
+        if driver.get("current_location"):
+            driver_loc = driver["current_location"]
+            distance = calculate_distance(
+                location.latitude, location.longitude,
+                driver_loc["lat"], driver_loc["lng"]
+            )
+            
+            if distance <= location.radius_km:
+                eta_minutes = calculate_eta_minutes(distance)
+                nearby_ambulances.append({
+                    "id": driver["id"],
+                    "name": driver["name"],
+                    "phone": driver["phone"],
+                    "vehicle_number": driver.get("vehicle_number"),
+                    "ambulance_type": driver.get("ambulance_type"),
+                    "rating": driver.get("rating", 5.0),
+                    "total_trips": driver.get("total_trips", 0),
+                    "location": driver_loc,
+                    "distance_km": round(distance, 2),
+                    "eta_minutes": eta_minutes
+                })
+    
+    # Sort by distance (closest first)
+    nearby_ambulances.sort(key=lambda x: x["distance_km"])
+    
+    # Calculate average ETA per ambulance type
+    eta_by_type = {}
+    for amb_type in AmbulanceType:
+        type_ambulances = [a for a in nearby_ambulances if a.get("ambulance_type") == amb_type.value]
+        if type_ambulances:
+            avg_eta = sum(a["eta_minutes"] for a in type_ambulances) / len(type_ambulances)
+            min_eta = min(a["eta_minutes"] for a in type_ambulances)
+            eta_by_type[amb_type.value] = {
+                "count": len(type_ambulances),
+                "min_eta_minutes": min_eta,
+                "avg_eta_minutes": round(avg_eta)
+            }
+        else:
+            eta_by_type[amb_type.value] = {
+                "count": 0,
+                "min_eta_minutes": None,
+                "avg_eta_minutes": None
+            }
+    
+    return {
+        "ambulances": nearby_ambulances,
+        "eta_by_type": eta_by_type,
+        "total_nearby": len(nearby_ambulances)
+    }
+
+
 # Booking Routes
 @api_router.post("/bookings")
 async def create_booking(booking_data: BookingCreate, user: dict = Depends(get_current_user)):
