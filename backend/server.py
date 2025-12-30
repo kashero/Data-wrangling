@@ -50,12 +50,39 @@ class BookingStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
-# Pricing config
+# Pricing config (KES - Kenyan Shillings)
 AMBULANCE_PRICES = {
-    AmbulanceType.BASIC: {"base": 50, "per_km": 10},
-    AmbulanceType.ICU: {"base": 150, "per_km": 25},
-    AmbulanceType.NEONATAL: {"base": 200, "per_km": 30},
+    AmbulanceType.BASIC: {"base": 2000, "per_km": 150},
+    AmbulanceType.ICU: {"base": 5000, "per_km": 300},
+    AmbulanceType.NEONATAL: {"base": 8000, "per_km": 400},
 }
+
+# Average ambulance speed in km/h for ETA calculation
+AVERAGE_SPEED_KMH = 40
+
+import math
+
+def calculate_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Calculate distance between two coordinates using Haversine formula (in km)"""
+    R = 6371  # Earth's radius in km
+    
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lng = math.radians(lng2 - lng1)
+    
+    a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lng/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    return R * c
+
+def calculate_eta_minutes(distance_km: float) -> int:
+    """Calculate ETA in minutes based on distance"""
+    if distance_km <= 0:
+        return 1
+    hours = distance_km / AVERAGE_SPEED_KMH
+    minutes = int(hours * 60)
+    return max(1, minutes)  # Minimum 1 minute
 
 # Pydantic Models
 class UserCreate(BaseModel):
