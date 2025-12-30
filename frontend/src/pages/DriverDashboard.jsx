@@ -338,7 +338,7 @@ export default function DriverDashboard() {
                     )}
                   </div>
                   <p className="font-bold text-slate-900 dark:text-white">
-                    ${activeBooking.estimated_fare?.toFixed(2)}
+                    {formatKES(activeBooking.estimated_fare)}
                   </p>
                 </div>
               </div>
