@@ -424,7 +424,7 @@ export default function DriverDashboard() {
                           <Badge variant="outline">{booking.ambulance_type?.toUpperCase()}</Badge>
                         </div>
                         <p className="font-bold text-slate-900 dark:text-white">
-                          ${booking.estimated_fare?.toFixed(2)}
+                          {formatKES(booking.estimated_fare)}
                         </p>
                       </div>
                       
