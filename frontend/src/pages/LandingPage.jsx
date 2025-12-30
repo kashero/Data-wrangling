@@ -30,19 +30,19 @@ const features = [
 const ambulanceTypes = [
   {
     type: 'Basic',
-    price: '$50 + $10/km',
+    price: 'KES 2,000 + KES 150/km',
     description: 'Standard medical transport with basic life support equipment.',
     features: ['First Aid Kit', 'Oxygen Supply', 'Stretcher', 'Trained EMT']
   },
   {
     type: 'ICU',
-    price: '$150 + $25/km',
+    price: 'KES 5,000 + KES 300/km',
     description: 'Advanced life support for critical patients requiring intensive care.',
     features: ['Ventilator', 'Cardiac Monitor', 'Defibrillator', 'ICU Nurse']
   },
   {
     type: 'Neonatal',
-    price: '$200 + $30/km',
+    price: 'KES 8,000 + KES 400/km',
     description: 'Specialized care for newborns and infants with dedicated equipment.',
     features: ['Incubator', 'Infant Monitor', 'Specialized Equipment', 'Neonatal Specialist']
   }
