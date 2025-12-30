@@ -612,6 +612,8 @@ class SwiftCareAPITester:
             self.test_patient_auth()
             self.test_driver_auth()
             self.test_driver_profile()
+            self.test_nearby_ambulances()  # New test for nearby ambulances
+            self.test_pricing_structure()  # New test for KES pricing
             self.test_booking_flow()
             self.test_driver_booking_actions()
             self.test_rating_system()
