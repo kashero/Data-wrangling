@@ -1,0 +1,151 @@
+{
+  "identity": {
+    "name": "E1: The Anti-AI Designer",
+    "philosophy": "Fusion over Imitation. Emotion First. Content is King.",
+    "tone": "Clinical Urgency - Trustworthy, Fast, Clear."
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Manrope, sans-serif",
+      "weights": ["600", "700", "800"],
+      "usage": "Use for all section headers, modal titles, and hero text. Tight tracking (-0.02em)."
+    },
+    "body": {
+      "font_family": "Public Sans, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Use for all paragraphs, inputs, and data displays. Normal tracking."
+    },
+    "mono": {
+      "font_family": "JetBrains Mono, monospace",
+      "usage": "Use for time stamps, coordinates, and vehicle IDs."
+    },
+    "installation": "Import from Google Fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@400;500;600&display=swap');"
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "name": "Signal Red",
+        "light": "#DC2626",
+        "dark": "#EF4444",
+        "usage": "Primary actions (Book, SOS, Accept), Error states."
+      },
+      "secondary": {
+        "name": "Medical Blue",
+        "light": "#0EA5E9",
+        "dark": "#38BDF8",
+        "usage": "Info states, active tabs, secondary buttons."
+      },
+      "neutral": {
+        "name": "Slate",
+        "light_bg": "#F8FAFC",
+        "dark_bg": "#0F172A",
+        "light_surface": "#FFFFFF",
+        "dark_surface": "#1E293B"
+      }
+    },
+    "tailwind_config_extension": {
+      "colors": {
+        "brand": {
+          "red": "var(--brand-red)",
+          "blue": "var(--brand-blue)"
+        }
+      }
+    },
+    "css_variables": {
+      ":root": {
+        "--brand-red": "220 60% 50%",
+        "--brand-blue": "199 89% 48%",
+        "--radius": "0.75rem"
+      },
+      ".dark": {
+        "--brand-red": "0 84% 60%",
+        "--brand-blue": "199 89% 60%"
+      }
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": {
+      "usage": "Use for floating panels over the map (Patient Request Panel, Driver Nav).",
+      "classes": "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20 shadow-xl"
+    },
+    "shadows": {
+      "floating": "0 8px 32px rgba(0, 0, 0, 0.12)",
+      "card": "0 2px 8px rgba(0, 0, 0, 0.05)"
+    },
+    "borders": {
+      "radius": "rounded-xl",
+      "width": "border"
+    }
+  },
+  "layout_strategies": {
+    "patient_dashboard": {
+      "type": "Bottom Sheet Architecture",
+      "description": "Map is full screen background. Controls live in a floating panel at the bottom (mobile) or left sidebar (desktop).",
+      "z_index": "Map: 0, Overlays: 10, Modals: 50"
+    },
+    "driver_dashboard": {
+      "type": "Cockpit View",
+      "description": "High contrast. Big buttons. Critical info (Next Turn, Patient Status) takes 50% of screen space.",
+      "grid": "grid-cols-1 md:grid-cols-3 gap-4"
+    },
+    "landing_page": {
+      "type": "Bento Grid (Mode A)",
+      "description": "Hero section uses asymmetric grid. SOS button is prominent but not accidental."
+    }
+  },
+  "components": {
+    "sos_button": {
+      "name": "SOSButton",
+      "specs": "Circular, pulsing animation, red gradient. Must require 'Press and Hold' to activate to prevent misclicks.",
+      "animation": "animate-pulse"
+    },
+    "map_view": {
+      "name": "LeafletMap",
+      "specs": "Full height. Custom markers for Ambulance (Icon) and Patient (Pin).",
+      "library": "react-leaflet"
+    },
+    "status_card": {
+      "name": "StatusCard",
+      "specs": "Shows driver details, ETA, and vehicle number. Glassmorphic background."
+    }
+  },
+  "image_urls": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1762805080882-84c2d3855963?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Ambulance with flashing lights at night, moody and urgent.",
+      "usage": "Hero section background with heavy dark overlay."
+    },
+    "team_section": {
+      "url": "https://images.pexels.com/photos/8942730/pexels-photo-8942730.jpeg",
+      "description": "Professional paramedics team.",
+      "usage": "About Us or 'Join as Driver' section."
+    },
+    "map_preview": {
+      "url": "https://images.unsplash.com/photo-1584972191378-d70853fc47fc?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Abstract map detail.",
+      "usage": "Background for 'How it works' or feature cards."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "preferred_icons": ["Siren", "MapPin", "Navigation", "Phone", "ShieldAlert", "Clock", "User", "Activity"]
+  },
+  "accessibility": {
+    "contrast": "Ensure text on red buttons is White (#FFFFFF). Text on map must have a backdrop.",
+    "touch_targets": "Minimum 48px for all interactive elements (Mobile First).",
+    "screen_readers": "All map markers must have aria-labels."
+  },
+  "instructions_to_main_agent": [
+    "1. SETUP: Install 'lucide-react', 'react-leaflet', 'leaflet', 'framer-motion', 'clsx', 'tailwind-merge'.",
+    "2. THEME: Update 'index.css' with the provided CSS variables for Signal Red and Medical Blue.",
+    "3. FONTS: Add the Google Fonts import to 'index.css' immediately.",
+    "4. COMPONENTS: Create a 'ui' folder. Build 'Button', 'Input', 'Card' using Shadcn patterns but with the 'Visual Enhancers' styles (Glassmorphism).",
+    "5. MAPS: Create a reusable 'MapComponent' using React Leaflet. Ensure it handles dynamic resizing.",
+    "6. PAGES: Build Landing Page first, then Auth, then Patient Dashboard.",
+    "7. CRITICAL: The SOS button must be the most visible element on the Patient Dashboard."
+  ],
+  "universal_guidelines": {
+    "do_not_use": ["Gradients for text", "Default blue links", "Generic 'Lorem Ipsum' (use medical context text)"],
+    "must_do": ["Use 'sonner' for notifications", "Add data-testid to all buttons", "Handle loading states with skeletons"]
+  }
+}
