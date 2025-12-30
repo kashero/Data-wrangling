@@ -117,7 +117,7 @@ export default function BookingDetails() {
                 </span>
               </div>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                ${booking.estimated_fare?.toFixed(2)}
+                {formatKES(booking.estimated_fare)}
               </p>
             </div>
           </CardContent>
