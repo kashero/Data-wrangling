@@ -150,13 +150,13 @@ export default function RegisterPage({ isDriver = false }) {
                       value={formData.ambulanceType} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, ambulanceType: value }))}
                     >
-                      <SelectTrigger data-testid="register-ambulance-type-select">
+                      <SelectTrigger data-testid="register-ambulance-type-select" className="relative z-10">
                         <SelectValue placeholder="Select ambulance type" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="basic">Basic Life Support</SelectItem>
-                        <SelectItem value="icu">ICU / Advanced Life Support</SelectItem>
-                        <SelectItem value="neonatal">Neonatal</SelectItem>
+                      <SelectContent position="popper" className="z-50">
+                        <SelectItem value="basic" data-testid="select-basic">Basic Life Support</SelectItem>
+                        <SelectItem value="icu" data-testid="select-icu">ICU / Advanced Life Support</SelectItem>
+                        <SelectItem value="neonatal" data-testid="select-neonatal">Neonatal</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
