@@ -14,14 +14,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import MapComponent from '../components/MapComponent';
 import { 
   Ambulance, MapPin, Phone, Clock, Star, LogOut, AlertTriangle, 
-  Navigation, User, History, Loader2, X, CheckCircle
+  Navigation, User, History, Loader2, X, CheckCircle, Timer
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Pricing in KES (Kenyan Shillings)
 const AMBULANCE_PRICES = {
-  basic: { base: 50, per_km: 10, label: 'Basic Life Support' },
-  icu: { base: 150, per_km: 25, label: 'ICU / Advanced' },
-  neonatal: { base: 200, per_km: 30, label: 'Neonatal' }
+  basic: { base: 2000, per_km: 150, label: 'Basic Life Support' },
+  icu: { base: 5000, per_km: 300, label: 'ICU / Advanced' },
+  neonatal: { base: 8000, per_km: 400, label: 'Neonatal' }
 };
 
 const STATUS_LABELS = {
@@ -34,6 +35,11 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled'
 };
 
+// Format KES currency
+const formatKES = (amount) => {
+  return `KES ${amount?.toLocaleString() || 0}`;
+};
+
 export default function PatientDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -41,14 +47,14 @@ export default function PatientDashboard() {
   const [activeBooking, setActiveBooking] = useState(null);
   const [bookingHistory, setBookingHistory] = useState([]);
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showSOSModal, setShowSOSModal] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sosHolding, setSOSHolding] = useState(false);
   const [sosProgress, setSOSProgress] = useState(0);
   const [selectedTab, setSelectedTab] = useState('book');
   
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [nearbyAmbulances, setNearbyAmbulances] = useState([]);
+  const [etaByType, setEtaByType] = useState({});
   const [bookingForm, setBookingForm] = useState({
     pickupAddress: '',
     destinationAddress: '',
@@ -56,6 +62,7 @@ export default function PatientDashboard() {
     notes: ''
   });
   
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState('');
   const [completedBookingId, setCompletedBookingId] = useState(null);
@@ -72,12 +79,33 @@ export default function PatientDashboard() {
         },
         (error) => {
           console.error('Error getting location:', error);
-          // Default to a location
-          setCurrentLocation({ lat: 40.7128, lng: -74.0060 });
+          // Default to Nairobi, Kenya
+          setCurrentLocation({ lat: -1.2921, lng: 36.8219 });
         }
       );
     }
   }, []);
+
+  // Fetch nearby ambulances when location is available
+  const fetchNearbyAmbulances = useCallback(async () => {
+    if (!currentLocation) return;
+    
+    try {
+      const data = await api.getNearbyAmbulances(currentLocation.lat, currentLocation.lng);
+      setNearbyAmbulances(data.ambulances || []);
+      setEtaByType(data.eta_by_type || {});
+    } catch (error) {
+      console.error('Error fetching nearby ambulances:', error);
+    }
+  }, [currentLocation]);
+
+  useEffect(() => {
+    if (currentLocation && !activeBooking) {
+      fetchNearbyAmbulances();
+      const interval = setInterval(fetchNearbyAmbulances, 10000); // Refresh every 10 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentLocation, activeBooking, fetchNearbyAmbulances]);
 
   // Fetch active booking and history
   const fetchBookings = useCallback(async () => {
@@ -102,7 +130,7 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     fetchBookings();
-    const interval = setInterval(fetchBookings, 5000); // Poll every 5 seconds
+    const interval = setInterval(fetchBookings, 5000);
     return () => clearInterval(interval);
   }, [fetchBookings]);
 
@@ -117,7 +145,7 @@ export default function PatientDashboard() {
             handleSOSRequest();
             return 0;
           }
-          return prev + 4; // 25 steps = 2.5 seconds
+          return prev + 4;
         });
       }, 100);
     } else {
@@ -139,7 +167,6 @@ export default function PatientDashboard() {
       const booking = await api.createSOSBooking(currentLocation.lat, currentLocation.lng);
       setActiveBooking(booking);
       toast.success('SOS Emergency sent! Help is on the way!');
-      setShowSOSModal(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to send SOS');
     } finally {
@@ -164,7 +191,7 @@ export default function PatientDashboard() {
           address: bookingForm.pickupAddress || 'Current Location'
         },
         destination: bookingForm.destinationAddress ? {
-          lat: currentLocation.lat + 0.02, // Simulated destination
+          lat: currentLocation.lat + 0.02,
           lng: currentLocation.lng + 0.02,
           address: bookingForm.destinationAddress
         } : null,
@@ -219,6 +246,7 @@ export default function PatientDashboard() {
   };
 
   const estimatedFare = AMBULANCE_PRICES[bookingForm.ambulanceType];
+  const selectedTypeEta = etaByType[bookingForm.ambulanceType];
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
@@ -262,6 +290,7 @@ export default function PatientDashboard() {
                   center={currentLocation}
                   patientLocation={activeBooking.pickup_location}
                   driverLocation={activeBooking.driver_location}
+                  nearbyAmbulances={[]}
                 />
               </div>
               
@@ -313,7 +342,7 @@ export default function PatientDashboard() {
                     )}
                   </div>
                   <p className="font-bold text-slate-900 dark:text-white">
-                    ${activeBooking.estimated_fare?.toFixed(2)}
+                    {formatKES(activeBooking.estimated_fare)}
                   </p>
                 </div>
               </div>
@@ -347,6 +376,37 @@ export default function PatientDashboard() {
           </TabsList>
 
           <TabsContent value="book">
+            {/* Nearby Ambulances Map */}
+            {!activeBooking && nearbyAmbulances.length > 0 && (
+              <Card className="mb-6 bg-white dark:bg-slate-900" data-testid="nearby-map-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    Nearby Ambulances
+                    <Badge variant="secondary" className="ml-2">{nearbyAmbulances.length} available</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-48 rounded-xl overflow-hidden mb-3">
+                    <MapComponent
+                      center={currentLocation}
+                      patientLocation={currentLocation}
+                      nearbyAmbulances={nearbyAmbulances}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {nearbyAmbulances.slice(0, 3).map((amb, i) => (
+                      <div key={amb.id} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-xs">
+                        <Ambulance className="w-3 h-3 text-blue-600" />
+                        <span className="font-medium">{amb.ambulance_type?.toUpperCase() || 'N/A'}</span>
+                        <span className="text-slate-500">~{amb.eta_minutes} min</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* SOS Button */}
             <Card className="mb-6 bg-gradient-to-br from-red-600 to-red-700 border-0" data-testid="sos-card">
               <CardContent className="p-6 text-center">
@@ -391,26 +451,38 @@ export default function PatientDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
-                  {/* Ambulance Type Selection */}
+                  {/* Ambulance Type Selection with ETA */}
                   <div className="grid grid-cols-3 gap-3">
-                    {Object.entries(AMBULANCE_PRICES).map(([type, info]) => (
-                      <button
-                        key={type}
-                        onClick={() => setBookingForm(prev => ({ ...prev, ambulanceType: type }))}
-                        className={`p-3 rounded-xl border-2 transition-all ${
-                          bookingForm.ambulanceType === type 
-                            ? 'border-red-600 bg-red-50 dark:bg-red-900/20' 
-                            : 'border-slate-200 dark:border-slate-700 hover:border-red-300'
-                        }`}
-                        data-testid={`ambulance-type-${type}`}
-                      >
-                        <Ambulance className={`w-6 h-6 mx-auto mb-2 ${
-                          bookingForm.ambulanceType === type ? 'text-red-600' : 'text-slate-400'
-                        }`} />
-                        <p className="text-xs font-medium text-slate-900 dark:text-white">{type.toUpperCase()}</p>
-                        <p className="text-xs text-slate-500">${info.base}+</p>
-                      </button>
-                    ))}
+                    {Object.entries(AMBULANCE_PRICES).map(([type, info]) => {
+                      const typeEta = etaByType[type];
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => setBookingForm(prev => ({ ...prev, ambulanceType: type }))}
+                          className={`p-3 rounded-xl border-2 transition-all ${
+                            bookingForm.ambulanceType === type 
+                              ? 'border-red-600 bg-red-50 dark:bg-red-900/20' 
+                              : 'border-slate-200 dark:border-slate-700 hover:border-red-300'
+                          }`}
+                          data-testid={`ambulance-type-${type}`}
+                        >
+                          <Ambulance className={`w-6 h-6 mx-auto mb-2 ${
+                            bookingForm.ambulanceType === type ? 'text-red-600' : 'text-slate-400'
+                          }`} />
+                          <p className="text-xs font-medium text-slate-900 dark:text-white">{type.toUpperCase()}</p>
+                          <p className="text-xs text-slate-500">KES {info.base.toLocaleString()}+</p>
+                          {typeEta && typeEta.count > 0 && (
+                            <div className="mt-1 flex items-center justify-center gap-1 text-xs text-green-600">
+                              <Timer className="w-3 h-3" />
+                              <span>~{typeEta.min_eta_minutes} min</span>
+                            </div>
+                          )}
+                          {typeEta && typeEta.count === 0 && (
+                            <p className="mt-1 text-xs text-slate-400">No nearby</p>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <Button 
@@ -450,7 +522,7 @@ export default function PatientDashboard() {
                           </p>
                         </div>
                         <p className="font-bold text-slate-900 dark:text-white">
-                          ${booking.estimated_fare?.toFixed(2)}
+                          {formatKES(booking.estimated_fare)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
@@ -519,10 +591,10 @@ export default function PatientDashboard() {
                 <SelectTrigger data-testid="booking-type-select">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="basic">Basic Life Support - $50 base</SelectItem>
-                  <SelectItem value="icu">ICU / Advanced - $150 base</SelectItem>
-                  <SelectItem value="neonatal">Neonatal - $200 base</SelectItem>
+                <SelectContent position="popper" className="z-50">
+                  <SelectItem value="basic">Basic Life Support - KES 2,000 base</SelectItem>
+                  <SelectItem value="icu">ICU / Advanced - KES 5,000 base</SelectItem>
+                  <SelectItem value="neonatal">Neonatal - KES 8,000 base</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -537,13 +609,29 @@ export default function PatientDashboard() {
               />
             </div>
             
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600 dark:text-slate-400">Estimated Fare</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  ${estimatedFare.base} + ${estimatedFare.per_km}/km
+                  KES {estimatedFare.base.toLocaleString()} + KES {estimatedFare.per_km}/km
                 </span>
               </div>
+              {selectedTypeEta && selectedTypeEta.count > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <Timer className="w-3 h-3" />
+                    Est. Arrival Time
+                  </span>
+                  <span className="font-medium text-green-600">
+                    ~{selectedTypeEta.min_eta_minutes} minutes
+                  </span>
+                </div>
+              )}
+              {selectedTypeEta && selectedTypeEta.count === 0 && (
+                <p className="text-xs text-amber-600">
+                  No {bookingForm.ambulanceType.toUpperCase()} ambulances nearby. Request will be broadcast to all drivers.
+                </p>
+              )}
             </div>
             
             <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading} data-testid="confirm-booking-btn">
