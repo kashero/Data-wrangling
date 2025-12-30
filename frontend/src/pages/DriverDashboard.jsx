@@ -15,7 +15,7 @@ import MapComponent from '../components/MapComponent';
 import { 
   Ambulance, MapPin, Phone, Clock, Star, LogOut, AlertTriangle, 
   Navigation, User, History, Loader2, Check, X, Settings,
-  Play, Square, CheckCircle
+  Play, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,6 +24,11 @@ const STATUS_FLOW = {
   en_route: { next: 'arrived', label: 'Arrived at Pickup', icon: MapPin },
   arrived: { next: 'in_progress', label: 'Patient Onboard', icon: User },
   in_progress: { next: 'completed', label: 'Complete Trip', icon: CheckCircle }
+};
+
+// Format KES currency
+const formatKES = (amount) => {
+  return `KES ${amount?.toLocaleString() || 0}`;
 };
 
 export default function DriverDashboard() {
